@@ -1,20 +1,38 @@
-const TYPES = {
-  App: Symbol.for("App"),
-  MainWindowService: Symbol.for("MainWindowService"),
-  StoreService: Symbol.for("StoreService"),
-  SessionService: Symbol.for("SessionService"),
-  DatabaseService: Symbol.for("DatabaseService"),
-  ProtocolService: Symbol.for("ProtocolService"),
-  UpdateService: Symbol.for("UpdateService"),
-  LoggerService: Symbol.for("LoggerService"),
+export const TYPES = {
+  ElectronApp: Symbol.for("ElectronApp"),
   IpcHandlerService: Symbol.for("IpcHandlerService"),
   Controller: Symbol.for("Controller"),
+  // repository
   VideoRepository: Symbol.for("VideoRepository"),
   FavoriteRepository: Symbol.for("FavoriteRepository"),
+  ConversionRepository: Symbol.for("ConversionRepository"),
+  // windows
+  BrowserWindow: Symbol.for("BrowserWindow"),
+  MainWindow: Symbol.for("MainWindow"),
+  PlayerWindow: Symbol.for("PlayerWindow"),
+  // services
   WebviewService: Symbol.for("WebviewService"),
   DownloadService: Symbol.for("DownloadService"),
-  BrowserWindowService: Symbol.for("BrowserWindowService"),
-  DevToolsService: Symbol.for("DevToolsService"),
+  SessionService: Symbol.for("SessionService"),
+  ProtocolService: Symbol.for("ProtocolService"),
+  VideoService: Symbol.for("VideoService"),
+  SniffingHelper: Symbol.for("SniffingHelper"),
+  // vendor
+  ElectronLogger: Symbol.for("ElectronLogger"),
+  ElectronUpdater: Symbol.for("ElectronUpdater"),
+  ElectronStore: Symbol.for("ElectronStore"),
+  ElectronDevtools: Symbol.for("ElectronDevtools"),
+  TypeORM: Symbol.for("TypeORM"),
 };
 
-export { TYPES };
+export enum AppTheme {
+  System = "system",
+  Light = "light",
+  Dark = "dark",
+}
+
+export enum AppLanguage {
+  System = "system",
+  ZH = "zh",
+  EN = "en",
+}

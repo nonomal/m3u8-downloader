@@ -1,7 +1,8 @@
 import { defineConfig } from "vite";
-import { splitVendorChunkPlugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+
+const isWeb = process.env.APP_TARGET === "web";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,11 +10,18 @@ export default defineConfig({
     port: 8555,
     strictPort: true,
   },
-  plugins: [react(), splitVendorChunkPlugin()],
+  plugins: [react()],
   envDir: "../..",
   envPrefix: "APP",
   build: {
-    outDir: path.resolve(__dirname, "../main/build/renderer"),
+    outDir: isWeb
+      ? path.resolve(__dirname, "../backend/dist/app")
+      : path.resolve(__dirname, "../main/app/build/renderer"),
     emptyOutDir: true,
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
   },
 });
