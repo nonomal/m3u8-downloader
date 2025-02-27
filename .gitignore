@@ -1,4 +1,7 @@
 node_modules
-.vscode
 *.local
 .idea
+.parcel-cache
+.vitepress
+*.tsno.mjs
+.DS_Store

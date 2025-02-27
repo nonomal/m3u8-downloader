@@ -1,10 +1,6 @@
-import { Video } from "electron";
-import { type Favorite } from "entity/Favorite";
-import {
-  DownloadItem,
-  DownloadItemPagination,
-  VideoResponse,
-} from "interfaces";
+import { Rectangle } from "electron";
+import { type DownloadType } from "interfaces";
+import { AppLanguage, AppTheme } from "./types";
 
 declare interface EnvPath {
   binPath: string;
@@ -14,57 +10,63 @@ declare interface EnvPath {
   local: string;
 }
 
-declare interface ElectronAPI {
-  getEnvPath: () => Promise<EnvPath>;
-  getFavorites: () => Promise<Favorite>;
-  addFavorite: (favorite: Favorite) => Promise<Favorite>;
-  removeFavorite: (id: number) => Promise<void>;
-  setWebviewBounds: (rect: Electron.Rectangle) => Promise<void>;
-  webviewLoadURL: (url?: string) => Promise<void>;
-  webviewGoBack: () => Promise<boolean>;
-  webviewReload: () => Promise<void>;
-  webwiewGoHome: () => Promise<void>;
-  getAppStore: () => Promise<AppStore>;
-  onSelectDownloadDir: () => Promise<string>;
-  setAppStore: (key: keyof AppStore, val: any) => Promise<void>;
-  openDir: (dir: string) => Promise<void>;
-  addDownloadItem: (video: DownloadItem) => Promise<Video>;
-  getDownloadItems: (
-    pagiantion: DownloadItemPagination
-  ) => Promise<VideoResponse>;
-  startDownload: (vid: number) => Promise<void>;
-  openUrl: (url: string) => Promise<void>;
-  stopDownload: (id: number) => Promise<void>;
-  onDownloadListContextMenu: (id: number) => Promise<void>;
-  onFavoriteItemContextMenu: (id: number) => Promise<void>;
-  deleteDownloadItem: (id: number) => Promise<void>;
-  convertToAudio: (id: number) => Promise<void>;
-  rendererEvent: (channel: string, funcId: string, listener: any) => void;
-  removeEventListener: (channel: string, funcId: string) => void;
-  showBrowserWindow: () => Promise<void>;
-  webviewHide: () => Promise<void>;
-  webviewShow: () => Promise<void>;
-  downloadNow: (video: DownloadItem) => Promise<void>;
-  combineToHomePage: () => Promise<void>;
-  editDownloadItem: (video: DownloadItem) => Promise<void>;
+declare interface BrowserWindowInitialVal {
+  url?: string;
+  sourceList?: WebSource[];
 }
 
-declare interface LinkMessage {
+declare interface WebSource {
   url: string;
-  title: string;
+  type: DownloadType;
+  name: string;
+  headers?: string;
 }
 
 declare interface AppStore {
-  // 本地存储地址
+  // Local storage address
   local: string;
-  // 下载完成提示音
+  // Download completion tone
   promptTone: boolean;
-  // 代理地址
+  // Proxy address
   proxy: string;
-  // 是否开启代理
+  // Whether to enable agent
   useProxy: boolean;
-  // 下载完成后删除原始文件
+  // Delete the original file after downloading
   deleteSegments: boolean;
-  // 新窗口打开浏览器
+  // A new window opens the browser
   openInNewWindow: boolean;
+  mainBounds?: Rectangle;
+  browserBounds?: Rectangle;
+  blockAds: boolean;
+  // theme
+  theme: AppTheme;
+  // Using browser plugins
+  useExtension: boolean;
+  // Whether to use mobile UA
+  isMobile: boolean;
+  // Maximum number of simultaneous downloads
+  maxRunner: number;
+  // Language
+  language: AppLanguage;
+  // Show terminal or not
+  showTerminal: boolean;
+  // Privacy mode
+  privacy: boolean;
+  // Machine id
+  machineId: string;
+  // Download proxy Settings
+  downloadProxySwitch: boolean;
+  // Automatic update
+  autoUpgrade: boolean;
+  // beta versions are allowed
+  allowBeta: boolean;
+  // Close the main window
+  closeMainWindow: boolean;
+  // Whether to play sounds in the browser. The default value is mute
+  audioMuted: boolean;
+}
+
+declare interface BrowserStore {
+  url: string;
+  sourceList: WebSource[];
 }

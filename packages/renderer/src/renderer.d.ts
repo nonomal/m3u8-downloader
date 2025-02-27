@@ -8,9 +8,15 @@ declare interface EnvPath {
 
 declare interface DownloadItem {
   id: number;
+  type: DownloadType;
   name: string;
   url: string;
-  status: string;
+  headers?: string;
+  status?: DownloadStatus;
+  isLive?: boolean;
+  log?: string;
+  folder?: string;
+  createdDate?: string;
 }
 
 declare interface VideoResponse {
@@ -24,41 +30,6 @@ declare interface DownloadItemPagination {
   filter?: string;
 }
 
-declare interface ElectronAPI {
-  getEnvPath: () => Promise<EnvPath>;
-  addFavorite: (favorite: Omit<Favorite, "id">) => Promise<Favorite>;
-  removeFavorite: (id: number) => Promise<void>;
-  getFavorites: () => Promise<Favorite[]>;
-  setWebviewBounds: (bounds: any) => Promise<void>;
-  webviewLoadURL: (url?: string) => Promise<void>;
-  webviewGoBack: () => Promise<boolean>;
-  webviewReload: () => Promise<void>;
-  webwiewGoHome: () => Promise<void>;
-  getAppStore: () => Promise<AppStore>;
-  onSelectDownloadDir: () => Promise<string>;
-  setAppStore: (key: keyof AppStore, val: any) => Promise<void>;
-  openDir: (dir: string) => Promise<void>;
-  addDownloadItem: (video: Partial<DownloadItem>) => Promise<DownloadItem>;
-  getDownloadItems: (
-    pagination: DownloadItemPagination
-  ) => Promise<VideoResponse>;
-  startDownload: (vid: number) => Promise<void>;
-  openUrl: (url: string) => Promise<void>;
-  stopDownload: (id: number) => Promise<void>;
-  onDownloadListContextMenu: (id: number) => Promise<void>;
-  onFavoriteItemContextMenu: (id: number) => Promise<void>;
-  deleteDownloadItem: (id: number) => Promise<void>;
-  convertToAudio: (id: number) => Promise<void>;
-  rendererEvent: (channel: string, listener: any) => void;
-  removeEventListener: (channel: string, listener: any) => void;
-  showBrowserWindow: () => Promise<void>;
-  webviewHide: () => Promise<void>;
-  webviewShow: () => Promise<void>;
-  downloadNow: (video: Partial<DownloadItem>) => Promise<void>;
-  combineToHomePage: () => Promise<void>;
-  editDownloadItem: (video: Partial<DownloadItem>) => Promise<void>;
-}
-
 declare interface Favorite {
   id: number;
   title: string;
@@ -66,33 +37,83 @@ declare interface Favorite {
   icon?: string;
 }
 
-declare interface LinkMessage {
+declare interface WebSource {
+  url: string;
+  name: string;
+  headers: string;
+}
+
+declare interface UrlDetail {
   url: string;
   title: string;
 }
 
 declare interface AppStore {
-  // 本地存储地址
+  // Local storage address
   local: string;
-  // 下载完成提示音
+  // Download completion tone
   promptTone: boolean;
-  // 代理地址
+  // Proxy address
   proxy?: string;
-  // 是否开启代理
+  // Whether to enable agent
   useProxy?: boolean;
-  // 下载完成后删除原始文件
+  // Delete the original file after downloading
   deleteSegments?: boolean;
-  // 新窗口打开浏览器
+  // A new window opens the browser
   openInNewWindow?: boolean;
+  // Whether to block ads
+  blockAds?: boolean;
+  // theme
+  theme?: AppTheme;
+  // Whether to use extensions
+  useExtension?: boolean;
+  // The mobile UA is used by default
+  isMobile?: boolean;
+  // Maximum number of simultaneous downloads
+  maxRunner?: number;
+  // Language
+  language?: AppLanguage;
+  // Show terminal or not
+  showTerminal?: boolean;
+  // Privacy mode
+  privacy?: boolean;
+  // Machine id
+  machineId?: string;
+  // Download proxy Settings
+  downloadProxySwitch?: boolean;
+  // Automatic update
+  autoUpgrade?: boolean;
+  // Whether to play sounds in the browser. The default value is mute
+  audioMuted?: boolean;
+}
+
+declare interface BrowserStore {
+  mode: PageMode;
+  url: string;
+  title: string;
+  status: BrowserStatus;
+  errCode?: number;
+  errMsg?: string;
+  sources: SourceData[];
 }
 
 declare interface DownloadProgress {
   id: number;
-  cur: string;
-  total: string;
   speed: string;
+  percent: string;
+  isLive: boolean;
 }
 
 interface ObjectConstructor {
   keys<T>(o: T): (keyof T)[];
+}
+
+interface VideoStat extends DownloadItem {
+  exists?: boolean;
+  file?: string;
+}
+
+interface ListPagination {
+  total: number;
+  list: VideoStat[];
 }

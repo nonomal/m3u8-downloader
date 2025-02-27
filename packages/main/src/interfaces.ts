@@ -1,67 +1,18 @@
-import { type BrowserWindow } from "electron";
-import { ElectronLog } from "electron-log";
-import Store from "electron-store";
-import { Favorite } from "entity/Favorite";
-import { Video } from "entity/Video";
-import EventEmitter from "events";
-import { AppStore } from "main";
-import { DataSource, EntityManager, UpdateResult, DeleteResult } from "typeorm";
-
-export interface MainWindowService extends BrowserWindow {
-  init: () => void;
-}
-
-export interface BrowserWindowService extends BrowserWindow {
-  init: () => void;
-  showWindow: () => void;
-  hideWindow: () => void;
-}
-
-export interface App {
-  init: () => void;
-}
-
-export interface IpcHandlerService {
-  init: () => void;
-}
-
-export interface ProtocolService {
-  create: () => void;
-}
-
-export interface UpdateService {
-  init: () => void;
-}
-
-export interface DatabaseService {
-  manager: EntityManager;
-  appDataSource: DataSource;
-  init: () => void;
-}
+import { Conversion } from "./entity/Conversion.ts";
+import { Video } from "./entity/Video.ts";
 
 export type Controller = Record<string | symbol, any>;
 
-export interface LoggerService {
-  logger: ElectronLog;
-  info: (...args: any[]) => void;
-  error: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  debug: (...args: any[]) => void;
-}
-
-export interface StoreService extends Store<AppStore> {
-  init: () => void;
-  setProxy: (
-    useProxy: boolean,
-    proxy: string,
-    isInit?: boolean
-  ) => Promise<void>;
-}
-
 export interface DownloadItem {
-  id?: number;
+  id: number;
+  type: DownloadType;
   name: string;
   url: string;
+  headers?: string;
+  status?: DownloadStatus;
+  folder?: string;
+  isLive?: boolean;
+  createdDate?: string;
 }
 
 export enum DownloadFilter {
@@ -75,43 +26,19 @@ export interface DownloadItemPagination {
   filter?: DownloadFilter;
 }
 
+export interface ConversionPagination {
+  current?: number;
+  pageSize?: number;
+}
+
 export interface VideoResponse {
   total: number;
   list: DownloadItem[];
 }
 
-export interface VideoRepository {
-  addVideo: (video: DownloadItem) => Promise<Video>;
-  editVideo: (video: DownloadItem) => Promise<Video>;
-  findVideos: (pagiantion: DownloadItemPagination) => Promise<VideoResponse>;
-  findVideo: (id: number) => Promise<Video | null>;
-  changeVideoStatus: (
-    id: number | number[],
-    status: DownloadStatus
-  ) => Promise<UpdateResult>;
-  findWattingAndDownloadingVideos: () => Promise<Video[]>;
-  deleteDownloadItem: (id: number) => Promise<DeleteResult>;
-}
-
-export interface FavoriteRepository {
-  findFavorites: () => Promise<Favorite[]>;
-  addFavorite: (favorite: Favorite) => Promise<Favorite>;
-  removeFavorite: (id: number) => Promise<void>;
-}
-
-export interface WebviewService {
-  webContents: Electron.WebContents;
-  init: () => void;
-  getBounds: () => Electron.Rectangle;
-  setAutoResize: (options: Electron.AutoResizeOptions) => void;
-  setBackgroundColor: (color: string) => void;
-  setBounds: (bounds: Electron.Rectangle) => void;
-  loadURL: (url?: string) => Promise<void>;
-  goBack: () => Promise<boolean>;
-  reload: () => Promise<void>;
-  goHome: () => Promise<void>;
-  hide: () => void;
-  show: () => void;
+export interface ConversionResponse {
+  total: number;
+  list: Conversion[];
 }
 
 export enum DownloadStatus {
@@ -123,33 +50,44 @@ export enum DownloadStatus {
   Failed = "failed",
 }
 
-export interface DownloadService extends EventEmitter {
-  addTask: (task: Task) => Promise<void>;
-  stopTask: (id: number) => Promise<void>;
-}
-
 export type Task = {
   id: number;
-  params: Omit<DownloadParams, "id" | "abortSignal">;
-  process: (params: DownloadParams) => Promise<void>;
+  params: Omit<DownloadParams, "id" | "abortSignal" | "callback">;
 };
 
 export interface DownloadProgress {
   id: number;
-  cur: string;
-  total: string;
+  type: string;
+  percent: string;
   speed: string;
+  isLive: boolean;
 }
 
+export enum DownloadType {
+  m3u8 = "m3u8",
+  bilibili = "bilibili",
+  direct = "direct",
+}
 export interface DownloadParams {
   id: number;
+  type: DownloadType;
   url: string;
   local: string;
   name: string;
+  headers?: string;
   abortSignal: AbortController;
+  proxy?: string;
   deleteSegments?: boolean;
+  callback: (progress: DownloadProgress) => void;
+  folder?: string;
 }
 
-export interface DevToolsService {
-  init: () => Promise<void>;
+export interface VideoStat extends Video {
+  exists?: boolean;
+  file?: string;
+}
+
+export interface ListPagination {
+  total: number;
+  list: VideoStat[];
 }

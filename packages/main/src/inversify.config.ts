@@ -1,74 +1,74 @@
-import DownloadController from "controller/DownloadController";
-import HomeController from "controller/HomeController";
-import WebviewController from "controller/WebviewController";
+import DownloadController from "./controller/DownloadController.ts";
+import HomeController from "./controller/HomeController.ts";
+import WebviewController from "./controller/WebviewController.ts";
 import { Container } from "inversify";
-import FavoriteRepositoryImpl from "repository/favoriteRepositoryImpl";
-import VideoRepositoryImpl from "repository/videoRepositoryImpl";
-import BrowserWindowServiceImpl from "services/BrowserWindowServiceImpl";
-import DatabaseServiceImpl from "services/DatabaseServiceImpl";
-import DevToolsServiceImpl from "services/DevToolsServiceImpl";
-import DownloadServiceImpl from "services/DownloadServiceImpl";
-import StoreServiceImpl from "services/StoreServiceImpl";
-import WebviewServiceImpl from "services/WebviewServiceImpl";
-import ElectronApp from "./app";
-import {
-  App,
-  StoreService,
-  Controller,
-  IpcHandlerService,
-  LoggerService,
-  MainWindowService,
-  ProtocolService,
-  UpdateService,
-  VideoRepository,
-  DatabaseService,
-  FavoriteRepository,
-  WebviewService,
-  BrowserWindowService,
-  DevToolsService,
-} from "./interfaces";
-import IpcHandlerServiceImpl from "./services/IpcHandlerServiceImpl";
-import LoggerServiceImpl from "./services/LoggerServiceImpl";
-import MainWindowServiceImpl from "./services/MainWindowServiceImpl";
-import ProtocolServiceImpl from "./services/ProtocolServiceImpl";
-import UpdateServiceImpl from "./services/UpdateServiceImpl";
-import { TYPES } from "./types";
+import FavoriteRepository from "./repository/FavoriteRepository.ts";
+import VideoRepository from "./repository/VideoRepository.ts";
+import WebviewService from "./services/WebviewService.ts";
+import ElectronApp from "./app.ts";
+import { Controller } from "./interfaces.ts";
+import { TYPES } from "./types.ts";
+import MainWindow from "./windows/MainWindow.ts";
+import BrowserWindow from "./windows/BrowserWindow.ts";
+import { SniffingHelper } from "./services/SniffingHelperService.ts";
+import DownloadService from "./services/DownloadService.ts";
+import ElectronLogger from "./vendor/ElectronLogger.ts";
+import ElectronUpdater from "./vendor/ElectronUpdater.ts";
+import TypeORM from "./vendor/TypeORM.ts";
+import ElectronDevtools from "./vendor/ElectronDevtools.ts";
+import ElectronStore from "./vendor/ElectronStore.ts";
+import IpcHandler from "./core/ipc.ts";
+import ProtocolService from "./core/protocol.ts";
+import ConversionController from "./controller/ConversionController.ts";
+import ConversionRepository from "./repository/ConversionRepository.ts";
+import { VideoService } from "./services/VideoService.ts";
+import PlayerWindow from "./windows/PlayerWindow.ts";
+import PlayerController from "./controller/PlayerController.ts";
 
 const container = new Container({
   skipBaseClassChecks: true,
   defaultScope: "Singleton",
   autoBindInjectable: true,
 });
-container
-  .bind<MainWindowService>(TYPES.MainWindowService)
-  .to(MainWindowServiceImpl);
-container
-  .bind<BrowserWindowService>(TYPES.BrowserWindowService)
-  .to(BrowserWindowServiceImpl);
-container.bind<App>(TYPES.App).to(ElectronApp);
-container
-  .bind<IpcHandlerService>(TYPES.IpcHandlerService)
-  .to(IpcHandlerServiceImpl);
-container.bind<ProtocolService>(TYPES.ProtocolService).to(ProtocolServiceImpl);
-container.bind<UpdateService>(TYPES.UpdateService).to(UpdateServiceImpl);
-container.bind<LoggerService>(TYPES.LoggerService).to(LoggerServiceImpl);
-container.bind<StoreService>(TYPES.StoreService).to(StoreServiceImpl);
-container.bind<DatabaseService>(TYPES.DatabaseService).to(DatabaseServiceImpl);
-container.bind<WebviewService>(TYPES.WebviewService).to(WebviewServiceImpl);
-container
-  .bind<DownloadServiceImpl>(TYPES.DownloadService)
-  .to(DownloadServiceImpl);
-container.bind<DevToolsService>(TYPES.DevToolsService).to(DevToolsServiceImpl);
 
-// === controller
+container.bind<ElectronApp>(TYPES.ElectronApp).to(ElectronApp);
+
+// services
+container.bind<WebviewService>(TYPES.WebviewService).to(WebviewService);
+container.bind<DownloadService>(TYPES.DownloadService).to(DownloadService);
+container.bind<SniffingHelper>(TYPES.SniffingHelper).to(SniffingHelper);
+container.bind<VideoService>(TYPES.VideoService).to(VideoService);
+
+// windows
+container.bind<MainWindow>(TYPES.MainWindow).to(MainWindow);
+container.bind<BrowserWindow>(TYPES.BrowserWindow).to(BrowserWindow);
+container.bind<PlayerWindow>(TYPES.PlayerWindow).to(PlayerWindow);
+
+// controller
 container.bind<Controller>(TYPES.Controller).to(HomeController);
 container.bind<Controller>(TYPES.Controller).to(WebviewController);
 container.bind<Controller>(TYPES.Controller).to(DownloadController);
+container.bind<Controller>(TYPES.Controller).to(ConversionController);
+container.bind<Controller>(TYPES.Controller).to(PlayerController);
 
-// === repository
-container.bind<VideoRepository>(TYPES.VideoRepository).to(VideoRepositoryImpl);
+// repository
+container.bind<VideoRepository>(TYPES.VideoRepository).to(VideoRepository);
 container
   .bind<FavoriteRepository>(TYPES.FavoriteRepository)
-  .to(FavoriteRepositoryImpl);
+  .to(FavoriteRepository);
+container
+  .bind<ConversionRepository>(TYPES.ConversionRepository)
+  .to(ConversionRepository);
+
+// vendor
+container.bind<ElectronDevtools>(TYPES.ElectronDevtools).to(ElectronDevtools);
+container.bind<TypeORM>(TYPES.TypeORM).to(TypeORM);
+container.bind<ElectronUpdater>(TYPES.ElectronUpdater).to(ElectronUpdater);
+container.bind<ElectronLogger>(TYPES.ElectronLogger).to(ElectronLogger);
+container.bind<ElectronStore>(TYPES.ElectronStore).to(ElectronStore);
+
+// core
+container.bind<ProtocolService>(TYPES.ProtocolService).to(ProtocolService);
+container.bind<IpcHandler>(TYPES.IpcHandlerService).to(IpcHandler);
 
 export { container };

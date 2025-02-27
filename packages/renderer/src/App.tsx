@@ -1,165 +1,205 @@
-import React, { FC, useEffect, useState } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Badge, Button, Layout, Menu, MenuProps } from "antd";
-import "./App.scss";
+import { ConfigProvider, theme } from "antd";
+import React, { FC, Suspense, lazy, useEffect } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import "dayjs/locale/zh-cn";
+import zhCN from "antd/locale/zh_CN";
+import useElectron from "@/hooks/useElectron";
+import Loading from "./components/Loading";
+import { DownloadFilter } from "./types";
+import { isWeb, tdApp } from "./utils";
+import { useAsyncEffect, useMemoizedFn } from "ahooks";
 import {
-  DownloadOutlined,
-  ExportOutlined,
-  ProfileOutlined,
-  QuestionCircleOutlined,
-  SettingOutlined,
-} from "@ant-design/icons";
-import useElectron from "./hooks/electron";
-import { useDispatch, useSelector } from "react-redux";
-import { selectStore, setAppStore } from "./store/appSlice";
-import { useAsyncEffect } from "ahooks";
-import { clearCount, selectCount } from "./store/downloadSlice";
-import { tdApp } from "./utils";
+  themeSelector,
+  updateSelector,
+  useSessionStore,
+} from "./store/session";
+import { useShallow } from "zustand/react/shallow";
+import { DOWNLOAD_FAIL, DOWNLOAD_SUCCESS, PAGE_LOAD } from "./const";
+import { useAppStore, setAppStoreSelector } from "./store/app";
+import { PageMode, setBrowserSelector, useBrowserStore } from "./store/browser";
+import { downloadStoreSelector, useDownloadStore } from "./store/download";
+import { App as AntdApp } from "antd";
 
-const { Footer, Sider, Content } = Layout;
+const AppLayout = lazy(() => import("./layout/App"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const SourceExtract = lazy(() => import("./pages/SourceExtract"));
+const SettingPage = lazy(() => import("./pages/SettingPage"));
+const ConverterPage = lazy(() => import("./pages/Converter"));
+const PlayerPage = lazy(() => import("./pages/Player"));
 
-type MenuItem = Required<MenuProps>["items"][number];
+function getAlgorithm(appTheme: "dark" | "light") {
+  return appTheme === "dark" ? theme.darkAlgorithm : theme.defaultAlgorithm;
+}
 
 const App: FC = () => {
-  const {
-    getAppStore: ipcGetAppStore,
-    openUrl,
-    setAppStore: ipcSetAppStore,
-    showBrowserWindow,
-    rendererEvent,
-    removeEventListener,
-  } = useElectron();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [showExport, setShowExport] = useState(false);
-  const count = useSelector(selectCount);
-  const appStore = useSelector(selectStore);
+  const { addIpcListener, removeIpcListener, getMachineId } = useElectron();
+  const { setUpdateAvailable, setUploadChecking } = useSessionStore(
+    useShallow(updateSelector),
+  );
+  const { setAppStore } = useAppStore(useShallow(setAppStoreSelector));
+  const { setBrowserStore } = useBrowserStore(useShallow(setBrowserSelector));
+  const { increase } = useDownloadStore(useShallow(downloadStoreSelector));
+  const { theme, setTheme } = useSessionStore(useShallow(themeSelector));
 
-  const items: MenuItem[] = [
-    {
-      label: (
-        <Link
-          to="/"
-          className="like-item"
-          onClick={() => {
-            dispatch(clearCount());
-          }}
-        >
-          <DownloadOutlined />
-          <span>下载列表</span>
-          {count > 0 && (
-            <Badge size="small" count={count} offset={[5, -3]}></Badge>
-          )}
-        </Link>
-      ),
-      key: "home",
-    },
-    {
-      label: (
-        <Link to="/source-extract" className="like-item">
-          <ProfileOutlined />
-          <span>素材提取</span>
-          {showExport && (
-            <Button
-              title="在新窗口中打开"
-              type="text"
-              style={{ marginLeft: "auto" }}
-              icon={<ExportOutlined />}
-              onClick={async (e) => {
-                e.stopPropagation();
-                e.preventDefault();
-
-                dispatch(setAppStore({ openInNewWindow: true }));
-                if (location.pathname === "/source-extract") {
-                  navigate("/");
-                }
-                // FIXME: 有可能 webview 还没有完全隐藏
-                await ipcSetAppStore("openInNewWindow", true);
-                await showBrowserWindow();
-              }}
-            />
-          )}
-        </Link>
-      ),
-      key: "source",
-      onMouseEnter: () => {
-        setShowExport(true);
-      },
-      onMouseLeave: () => {
-        setShowExport(false);
-      },
-    },
-    {
-      label: (
-        <Link to="/settings" className="like-item">
-          <SettingOutlined />
-          <span>设置</span>
-        </Link>
-      ),
-      key: "settings",
-    },
-  ];
+  const themeChange = useMemoizedFn((event: MediaQueryListEvent) => {
+    if (event.matches) {
+      setTheme("dark");
+    } else {
+      setTheme("light");
+    }
+  });
 
   // 监听store变化
-  const onStoreChange = (event: any, store: AppStore) => {
-    dispatch(setAppStore(store));
-  };
+  const onAppStoreChange = useMemoizedFn((event: any, store: AppStore) => {
+    setAppStore(store);
+  });
+
+  const onReceiveDownloadItem = useMemoizedFn(() => {
+    increase();
+  });
+
+  const onChangePrivacy = useMemoizedFn(() => {
+    setBrowserStore({ url: "", title: "", mode: PageMode.Default });
+  });
 
   useEffect(() => {
-    rendererEvent("store-change", onStoreChange);
+    const updateAvailable = () => {
+      setUpdateAvailable(true);
+      setUploadChecking(false);
+    };
+    const updateNotAvailable = () => {
+      setUpdateAvailable(false);
+      setUploadChecking(false);
+    };
+    const checkingForUpdate = () => {
+      setUploadChecking(true);
+    };
+    const onDownloadSuccess = () => {
+      tdApp.onEvent(DOWNLOAD_SUCCESS);
+    };
+    const onDownloadFailed = () => {
+      tdApp.onEvent(DOWNLOAD_FAIL);
+    };
+    addIpcListener("store-change", onAppStoreChange);
+    addIpcListener("download-item-notifier", onReceiveDownloadItem);
+    addIpcListener("change-privacy", onChangePrivacy);
+    addIpcListener("updateAvailable", updateAvailable);
+    addIpcListener("updateNotAvailable", updateNotAvailable);
+    addIpcListener("checkingForUpdate", checkingForUpdate);
+    addIpcListener("download-success", onDownloadSuccess);
+    addIpcListener("download-failed", onDownloadFailed);
 
     return () => {
-      removeEventListener("store-change", onStoreChange);
+      removeIpcListener("store-change", onAppStoreChange);
+      removeIpcListener("download-item-notifier", onReceiveDownloadItem);
+      removeIpcListener("change-privacy", onChangePrivacy);
+      removeIpcListener("updateAvailable", updateAvailable);
+      removeIpcListener("updateNotAvailable", updateNotAvailable);
+      removeIpcListener("checkingForUpdate", checkingForUpdate);
+      removeIpcListener("download-success", onDownloadSuccess);
+      removeIpcListener("download-failed", onDownloadFailed);
     };
   }, []);
 
-  const finalItems = items.filter((item) =>
-    appStore.openInNewWindow ? item?.key !== "source" : true
-  );
-
-  const openHelpUrl = () => {
-    tdApp.openHelpPage();
-    const url =
-      "https://blog.ziying.site/post/media-downloader-how-to-use/?form=client";
-    openUrl(url);
-  };
-
   useAsyncEffect(async () => {
-    const store = await ipcGetAppStore();
-    dispatch(setAppStore(store));
+    const deviceId = await getMachineId();
+    tdApp.onEvent(PAGE_LOAD, { deviceId });
+  }, []);
+
+  useEffect(() => {
+    const isDarkTheme = matchMedia("(prefers-color-scheme: dark)");
+    isDarkTheme.addEventListener("change", themeChange);
+
+    if (isDarkTheme.matches) {
+      setTheme("dark");
+    } else {
+      setTheme("light");
+    }
+
+    return () => {
+      isDarkTheme.removeEventListener("change", themeChange);
+    };
   }, []);
 
   return (
-    <Layout className="container">
-      {/* <Header className="container-header">Media Downloader</Header> */}
-      <Layout>
-        <Sider className="container-sider" theme="light">
-          <Menu
-            style={{ height: "100%" }}
-            defaultSelectedKeys={["home"]}
-            mode="vertical"
-            theme="light"
-            items={finalItems}
-          />
-        </Sider>
-        <Layout>
-          <Content className="container-inner">
-            <Outlet />
-          </Content>
-          <Footer className="container-footer">
-            <Button
-              size="small"
-              type={"link"}
-              onClick={openHelpUrl}
-              icon={<QuestionCircleOutlined />}
+    <ConfigProvider
+      locale={zhCN}
+      componentSize={isWeb ? undefined : "small"}
+      theme={{ algorithm: getAlgorithm(theme) }}
+    >
+      <AntdApp className="size-full overflow-hidden">
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Suspense fallback={<Loading />}>
+                  <AppLayout />
+                </Suspense>
+              }
             >
-              使用帮助
-            </Button>
-          </Footer>
-        </Layout>
-      </Layout>
-    </Layout>
+              <Route
+                index
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <HomePage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="done"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <HomePage filter={DownloadFilter.done} />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="source"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <SourceExtract />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <SettingPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="converter"
+                element={
+                  <Suspense fallback={<Loading />}>
+                    <ConverterPage />
+                  </Suspense>
+                }
+              />
+              <Route path="*" element={<div>404</div>} />
+            </Route>
+            <Route
+              path="/browser"
+              element={
+                <Suspense fallback={<Loading />}>
+                  <SourceExtract page={true} />
+                </Suspense>
+              }
+            />
+            <Route
+              path="player"
+              element={
+                <Suspense fallback={<Loading />}>
+                  <PlayerPage />
+                </Suspense>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </AntdApp>
+    </ConfigProvider>
   );
 };
 

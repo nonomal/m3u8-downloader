@@ -1,19 +1,56 @@
 import { app } from "electron";
 import isDev from "electron-is-dev";
-import path from "path";
+import { resolve } from "path";
 
-if (!isDev) {
-  global.__bin__ = path.resolve(app.getAppPath(), "../bin");
+const appPath = app.getAppPath();
+export const appData = app.getPath("appData");
+export const download = app.getPath("downloads");
+
+export enum Platform {
+  Windows = "win32",
+  MacOS = "darwin",
+  Linux = "linux",
 }
 
-export const appData = app.getPath("appData");
-export const appName = process.env.APP_NAME || "electron-template";
-export const workspace = path.resolve(appData, appName);
+export const isMac = process.platform === Platform.MacOS;
+export const isWin = process.platform === Platform.Windows;
+export const isLinux = process.platform === Platform.Linux;
+
+if (!isDev) {
+  global.__bin__ = resolve(appPath, "../bin");
+}
+
+export function resolveStatic(path: string) {
+  const relativePath = isDev ? "../.." : "..";
+  return resolve(appPath, relativePath, path);
+}
+export function resolveBin(path: string) {
+  if (isWin) {
+    path += ".exe";
+  }
+  return resolve(__bin__, path);
+}
+
+export const appName = process.env.APP_NAME || "mediago";
+export const workspace = resolve(appData, appName);
 export const defaultScheme = "mediago";
-export const download = app.getPath("downloads");
 export const PERSIST_MEDIAGO = "persist:mediago";
 export const PERSIST_WEBVIEW = "persist:webview";
-export const db = path.resolve(workspace, "app.db");
-// export const downloaderPath = path.resolve(__bin__, "N_m3u8DL-RE.exe");
-export const downloaderPath = path.resolve(__bin__, "N_m3u8DL-CLI_v3.0.2.exe");
-export const ffmpegPath = path.resolve(__bin__, "ffmpeg.exe");
+export const PRIVACY_WEBVIEW = "webview";
+export const db = resolve(workspace, "app.db");
+
+// bin path
+export const ffmpegPath = resolveBin("ffmpeg");
+export const biliDownloaderBin = resolveBin("BBDown");
+export const m3u8DownloaderBin = resolveBin("N_m3u8DL-RE");
+export const gopeedBin = resolveBin("gopeed");
+
+// plugin path
+export const pluginPath = resolveStatic("plugin/index.js");
+// mobile path
+export const mobileDir = resolveStatic("mobile");
+
+// user agent
+export const pcUA = "";
+export const mobileUA =
+  "Mozilla/5.0 (Linux; Android 11; SAMSUNG SM-G973U) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/14.2 Chrome/87.0.4280.141 Mobile Safari/537.36";

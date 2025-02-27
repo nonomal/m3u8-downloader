@@ -1,16 +1,22 @@
 import "vite/client";
+import { ElectronApi } from "../../main/types/preload";
 
 declare global {
   interface Window {
-    electron: ElectronAPI;
-    TDAPP: {
+    electron: ElectronApi;
+    TDAPP?: {
       onEvent: (
         eventId: string,
         label: "",
-        mapKv: Record<string, string>
+        mapKv: Record<string, string>,
       ) => void;
     };
   }
+}
+
+declare module "*.svg" {
+  const content: React.FC<React.SVGProps<SVGElement>>;
+  export default content;
 }
 
 export {};
